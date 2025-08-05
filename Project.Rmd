@@ -1,0 +1,147 @@
+---
+title: "Project"
+author: "Srinika Kalavala"
+date: "2024-09-14"
+output: html_document
+---
+
+```{r}
+# Load necessary libraries
+library(tidyverse)  # for data manipulation and visualization
+
+# Import the dataset
+crime_data <- read.csv("hate_crime.csv")
+
+# View the structure of the dataset
+str(crime_data)
+
+# Summary statistics of the dataset
+summary(crime_data)
+
+# First few rows of the data
+head(crime_data)
+
+```
+```{r}
+# Convert 'incident_date' to Date format
+crime_data$incident_date <- as.Date(crime_data$incident_date, format="%Y-%m-%d")
+
+# Check if the conversion worked
+summary(crime_data$incident_date)
+
+```
+
+```{r}
+# Check for missing values
+sapply(crime_data, function(x) sum(is.na(x)))
+
+# Depending on the findings, you can either remove or impute missing data.
+# For now, let's remove rows with any missing values.
+crime_data_clean <- na.omit(crime_data)
+
+# Verify no missing values remain
+sapply(crime_data_clean, function(x) sum(is.na(x)))
+
+```
+
+```{r}
+# Bar plot: Number of crimes by offense type
+ggplot(crime_data_clean, aes(x = offense_name)) +
+  geom_bar(fill = "steelblue") +
+  theme_minimal() +
+  ggtitle("Crimes by Offense Type") +
+  xlab("Offense Type") +
+  ylab("Count")
+
+```
+
+```{r}
+# Crimes by year
+ggplot(crime_data_clean, aes(x = data_year)) +
+  geom_bar(fill = "tomato") +
+  theme_minimal() +
+  ggtitle("Number of Crimes by Year") +
+  xlab("Year") +
+  ylab("Crime Count")
+
+```
+```{r}
+# Bar plot: Number of crimes by bias description
+ggplot(crime_data_clean, aes(x = bias_desc)) +
+  geom_bar(fill = "purple") +
+  theme_minimal() +
+  ggtitle("Crimes by Bias Type") +
+  xlab("Bias Description") +
+  ylab("Count")
+
+```
+
+```{r}
+# Bar plot: Crimes by state
+ggplot(crime_data_clean, aes(x = reorder(state_name, state_name, function(x) -length(x)))) +
+  geom_bar(fill = "darkgreen") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ggtitle("Crimes by State") +
+  xlab("State") +
+  ylab("Count")
+
+```
+```{r}
+# Create a new column to categorize victims as 'Adult' or 'Juvenile'
+crime_data_clean$victim_age_group <- ifelse(crime_data_clean$adult_victim_count > 0, "Adult", "Juvenile")
+
+# Bar plot: Victim count by age group
+ggplot(crime_data_clean, aes(x = victim_age_group)) +
+  geom_bar(fill = "darkred") +
+  theme_minimal() +
+  ggtitle("Victim Count by Age Group")
+
+```
+```{r}
+# Bar plot: Victim count by offender race
+ggplot(crime_data_clean, aes(x = offender_race)) +
+  geom_bar(fill = "darkblue") +
+  theme_minimal() +
+  ggtitle("Victim Count by Offender Race") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Offender Race") +
+  ylab("Count")
+
+```
+```{r}
+# Bar plot: Crimes by location type
+ggplot(crime_data_clean, aes(x = location_name)) +
+  geom_bar(fill = "darkorange") +
+  theme_minimal() +
+  ggtitle("Crimes by Location") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Location") +
+  ylab("Count")
+
+```
+```{r}
+# Perform K-means clustering based on states and total crimes
+state_crimes <- crime_data %>%
+  group_by(state_name) %>%
+  summarise(total_crimes = n())
+
+# Perform clustering
+set.seed(123)
+kmeans_result <- kmeans(state_crimes$total_crimes, centers = 3)
+
+# Add cluster info to data
+state_crimes$cluster <- as.factor(kmeans_result$cluster)
+
+# Visualize clusters
+ggplot(state_crimes, aes(x = reorder(state_name, total_crimes), y = total_crimes, fill = cluster)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  ggtitle("Crime Clusters by State") +
+  xlab("State") +
+  ylab("Total Crimes") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
